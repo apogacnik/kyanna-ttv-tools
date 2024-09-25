@@ -1,4 +1,6 @@
 from config import TTV_CLIENT_ID, TTV_CLIENT_SECRET, TTV_USERNAME
+from audio.generate_username_audio import generate_username_audio
+from audio.combine_audio import combine_audio
 
 from twitchAPI.twitch import Twitch
 from twitchAPI.eventsub.websocket import EventSubWebsocket
@@ -13,9 +15,13 @@ REDIRECT_URI = 'http://localhost:17563'
 
 async def on_subscribe(data: ChannelSubscribeEvent):
     print(f'{data.event.user_name} just subscribed!')
+    generate_username_audio(data.event.user_name)
+    combine_audio(data.event.user_name)
 
 async def on_follow(data: ChannelFollowEvent):
     print(f'{data.event.user_name} just followed!')
+    generate_username_audio(data.event.user_name)
+    combine_audio(data.event.user_name)
 
 async def start_event_listener():
     # Authentication - opens webpage to authorize the app
