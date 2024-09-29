@@ -2,3 +2,4 @@ twitchAPI
 websockets
 gtts
 pydub
+flask-socketio

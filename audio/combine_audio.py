@@ -16,6 +16,8 @@ def combine_audio(username: str):
     # Export the combined audio
     combined_audio.export(generatedAudio_path + username + " thank you.mp3", format="mp3")
 
+    return generatedAudio_path + username + " thank you.mp3"
+
 # Testing
 if __name__ == '__main__':
     combine_audio("matan")

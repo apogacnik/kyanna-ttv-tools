@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alerts Page</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Play&display=swap');
+
+        #alert-box {
+            height: 40vh;
+            font-family: "Play", sans-serif;
+            font-size: 4rem;
+            display: none; /* Initially hidden */
+            text-align: center;
+        }
+
+        .neon-wrapper {
+            font-family: "Play", sans-serif;
+        }
+
+        .neon h3 {
+            animation: neon 1s ease infinite;
+            margin: 0px
+        }
+
+        @keyframes neon {
+            0%,
+            100% {
+                text-shadow: 0 0 10px #ef00e3a8, 0 0 20px #ef00e3a8, 0 0 20px #ef00e3a8, 0 0 20px #ef00e3a8, 0 0 2px #fed128, 2px 2px 2px #806914;
+                color: #f5efcb;
+            }
+
+            50% {
+                text-shadow: 0 0 2px #800e0b, 0 0 5px #800e0b, 0 0 5px #800e0b, 0 0 5px #800e0b, 0 0 2px #800e0b, 4px 4px 2px #40340a;
+                color: #eda0d3;
+            }
+        }
+
+        .second-line {
+            font-size: 3rem;
+            margin: 0px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 1-GIF, 2-Username, 3-text -->
+    <div id="alert-box">
+        <img src="static/kittens-please.gif" style="height: 60vh;">
+        <!-- Neon username style -->
+        <div class="neon-wrapper">
+            <div class="neon">
+                <h3 id="username-text"></h3>
+            </div>
+        </div>
+        <h3 class="second-line">is a cute kitten now!</h3>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.0/socket.io.js"></script>
+    <script>
+        // Establish WebSocket connection to the Flask server
+        var socket = io();
+
+        // Function to display the username in the alert box
+        function showAlert(username, audio_file) {
+            console.log(audio_file)
+
+            // Play audio file
+            var audio = new Audio(audio_file);
+    	    audio.play();
+            // document.getElementById('thankYouAudio').play();
+
+            const alertBox = document.getElementById('alert-box');
+            const usernameText = document.getElementById('username-text');
+            usernameText.textContent = `${username}`;
+
+            // Remove previous animation classes
+            alertBox.classList.remove('animate__fadeIn', 'animate__fadeOut');
+
+            alertBox.style.display = 'block'; // Show the alert
+            alertBox.classList.add('animate__animated', 'animate__fadeIn'); // Add animation classes
+
+            // Hide the alert after 6 seconds
+            setTimeout(function () {
+                alertBox.classList.remove('animate__fadeIn');
+                alertBox.classList.add('animate__fadeOut');
+
+                // After fading out, hide the alert box
+                setTimeout(function () {
+                    alertBox.style.display = 'none';
+                    alertBox.classList.remove('animate__fadeOut');
+                }, 1000); // Duration of fadeOut animation
+            }, 6000); // Show alert for 6 seconds
+        }
+
+        // Listen for 'display_alert' WebSocket event from the server
+        socket.on('display_alert', function (data) {
+            if (data.username && data.audio_file) {
+                showAlert(data.username, data.audio_file);
+            }
+        });
+    </script>
+</body>
+
+</html>

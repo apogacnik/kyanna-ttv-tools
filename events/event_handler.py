@@ -8,20 +8,42 @@ from twitchAPI.oauth import UserAuthenticationStorageHelper
 from twitchAPI.object.eventsub import ChannelSubscribeEvent, ChannelFollowEvent
 from twitchAPI.type import AuthScope
 from twitchAPI.helper import first
+import requests
 
 TARGET_SCOPE = [AuthScope.CHANNEL_READ_SUBSCRIPTIONS, AuthScope.MODERATOR_READ_FOLLOWERS]
 REDIRECT_URI = 'http://localhost:17563'
 
+def trigger_web_alert(username, combined_audio_path):
+    url = 'http://localhost:5000/alert'
+    payload = {
+        'username': username,
+        'audioFile': combined_audio_path
+    }
+    headers = {'Content-Type': 'application/json'}
+    
+    response = requests.post(url, json=payload, headers=headers)
+    if response.status_code == 200:
+        print('Alert triggered successfully!')
+    else:
+        print(f'Failed to trigger alert: {response.text}')
 
 async def on_subscribe(data: ChannelSubscribeEvent):
-    print(f'{data.event.user_name} just subscribed!')
-    generate_username_audio(data.event.user_name)
-    combine_audio(data.event.user_name)
+    username = data.event.user_name
+    print(f'{username} just subscribed!')
+    generate_username_audio(username)
+    combined_audio_path = combine_audio(username)
+
+    # Trigger the web-based overlay
+    trigger_web_alert(username, combined_audio_path)
 
 async def on_follow(data: ChannelFollowEvent):
-    print(f'{data.event.user_name} just followed!')
-    generate_username_audio(data.event.user_name)
-    combine_audio(data.event.user_name)
+    username = data.event.user_name
+    print(f'{username} just followed!')
+    generate_username_audio(username)
+    combined_audio_path = combine_audio(username)
+
+    # Trigger the web-based overlay
+    trigger_web_alert(username, combined_audio_path)
 
 async def start_event_listener():
     # Authentication - opens webpage to authorize the app
