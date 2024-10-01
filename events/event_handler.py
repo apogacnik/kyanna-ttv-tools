@@ -10,8 +10,25 @@ from twitchAPI.type import AuthScope
 from twitchAPI.helper import first
 import requests
 
+import logging
+import os
+from datetime import datetime
+
 TARGET_SCOPE = [AuthScope.CHANNEL_READ_SUBSCRIPTIONS, AuthScope.MODERATOR_READ_FOLLOWERS]
 REDIRECT_URI = 'http://localhost:17563'
+
+# Set up logging
+log_folder = 'logs/'
+os.makedirs(log_folder, exist_ok=True)  # Create the folder if it doesn't exist
+current_date = datetime.now().strftime('%Y-%m-%d')
+log_filename = f'{log_folder}{current_date}.log'
+
+logging.basicConfig(
+    filename=log_filename,
+    level=logging.INFO, 
+    format='%(asctime)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 
 def trigger_web_alert(username, combined_audio_path):
     url = 'http://localhost:5000/alert'
@@ -30,6 +47,7 @@ def trigger_web_alert(username, combined_audio_path):
 async def on_subscribe(data: ChannelSubscribeEvent):
     username = data.event.user_name
     print(f'{username} just subscribed!')
+    logging.info(data)
     generate_username_audio(username)
     combined_audio_path = combine_audio(username)
 
@@ -39,6 +57,7 @@ async def on_subscribe(data: ChannelSubscribeEvent):
 async def on_follow(data: ChannelFollowEvent):
     username = data.event.user_name
     print(f'{username} just followed!')
+    logging.info(data)
     generate_username_audio(username)
     combined_audio_path = combine_audio(username)
 
