@@ -6,7 +6,7 @@ from twitchAPI.twitch import Twitch
 from twitchAPI.eventsub.websocket import EventSubWebsocket
 from twitchAPI.oauth import UserAuthenticator
 from twitchAPI.oauth import UserAuthenticationStorageHelper
-from twitchAPI.object.eventsub import ChannelSubscribeEvent, ChannelSubscriptionGiftEvent, ChannelFollowEvent
+from twitchAPI.object.eventsub import ChannelFollowEvent, ChannelSubscribeEvent, ChannelSubscriptionGiftEvent, ChannelSubscriptionMessageEvent
 from twitchAPI.type import AuthScope
 from twitchAPI.helper import first
 import requests
@@ -18,10 +18,13 @@ import sys
 TARGET_SCOPE = [AuthScope.CHANNEL_READ_SUBSCRIPTIONS, AuthScope.MODERATOR_READ_FOLLOWERS]
 REDIRECT_URI = 'http://localhost:17563'
 
-def trigger_web_alert(username, combined_audio_path):
+def trigger_web_alert(event_type, textLine1, textLine2, textLine3, combined_audio_path):
     url = 'http://localhost:5000/alert'
     payload = {
-        'username': username,
+        'event_type': event_type,
+        'textLine1': textLine1, # Username
+        'textLine2': textLine2, # TY message
+        'textLine3': textLine3, # Resub message/other
         'audioFile': combined_audio_path
     }
     headers = {'Content-Type': 'application/json'}
@@ -32,29 +35,51 @@ def trigger_web_alert(username, combined_audio_path):
     else:
         print(f'Failed to trigger alert: {response.text}')
 
-async def on_subscribe(data: ChannelSubscribeEvent):
-    username = data.event.user_name
-    print(f'{username} just subscribed!')
-    logging.info(data)
-    generate_username_audio(username)
-    combined_audio_path = combine_audio(username)
-
-    # Trigger the web-based overlay
-    trigger_web_alert(username, combined_audio_path)
-
-async def on_gift_subscription(data: ChannelSubscriptionGiftEvent):
-    print("gifted sub")
-    print(data)
-
 async def on_follow(data: ChannelFollowEvent):
+    logging.info(data)
+    ''' turned off
     username = data.event.user_name
     print(f'{username} just followed!')
-    logging.info(data)
     generate_username_audio(username)
     combined_audio_path = combine_audio(username)
 
     # Trigger the web-based overlay
-    trigger_web_alert(username, combined_audio_path)
+    trigger_web_alert("follow", username, "followed", "", combined_audio_path)
+    '''
+
+async def on_subscribe(data: ChannelSubscribeEvent):
+    logging.info(data)
+    username = data.event.user_name
+
+    if (data.event.is_gift): # No alert
+        print(username, "got gifted a sub")
+    else:
+        print(f'{username} just subscribed!')
+        generate_username_audio(username)
+        combined_audio_path = combine_audio(username)
+        textLine2 = "is a cute kitten now!"
+        textLine3 = ""
+        trigger_web_alert("subscribe", username, textLine2, textLine3, combined_audio_path)
+
+async def on_gift_subscription(data: ChannelSubscriptionGiftEvent):
+    logging.info(data)
+    if (data.event.is_anonymous):
+        username = "Anonymous"
+    else:
+        username = data.event.user_name
+    
+    gifted_number = data.event.total
+    print(f'{username} gifted {gifted_number} subs')
+
+    generate_username_audio(username)
+    combined_audio_path = combine_audio(username)
+    textLine2 = f'gifted {gifted_number} subs!'
+    textLine3 = ""
+    trigger_web_alert("giftsub", username, textLine2, textLine3, combined_audio_path)
+
+# Test
+async def on_resub(data: ChannelSubscriptionMessageEvent):
+    logging.info(data)
 
 async def start_event_listener():
     # Change the current working directory to the script's directory
@@ -77,13 +102,17 @@ async def start_event_listener():
                                     connection_url='ws://127.0.0.1:8080/ws',
                                     subscription_url='http://127.0.0.1:8080/')
         eventsub.start()
+        follow_id = await eventsub.listen_channel_follow_v2(user.id, user.id, callback=on_follow)
         sub_id = await eventsub.listen_channel_subscribe(user.id, on_subscribe)
         sub_gift_id = await eventsub.listen_channel_subscription_gift(user.id, on_gift_subscription)
+        resub_id = await eventsub.listen_channel_subscription_message(user.id, on_resub)
 
         # Test events:
         print('Test events ------------------------------------------------------------------------------------------------')
-        print(f'twitch event trigger channel.subscribe         -t {user.id} -u {sub_id} -T websocket')
-        print(f'twitch event trigger channel.subscription.gift -t {user.id} -u {sub_gift_id} -T websocket')
+        print(f'twitch event trigger channel.follow               -t {user.id} -u {follow_id} -T websocket')
+        print(f'twitch event trigger channel.subscribe            -t {user.id} -u {sub_id} -T websocket')
+        print(f'twitch event trigger channel.subscription.gift    -t {user.id} -u {sub_gift_id} -T websocket')
+        print(f'twitch event trigger channel.subscription.message -t {user.id} -u {resub_id} -T websocket')
         print('------------------------------------------------------------------------------------------------------------')
     else:
         # Authentication - opens webpage to authorize the app
@@ -96,10 +125,12 @@ async def start_event_listener():
         print('UserID: ' + user.id)
         eventsub = EventSubWebsocket(twitch)
         eventsub.start()
-        # listen to subscribtions
+
+        # Event listeners
+        follow_id = await eventsub.listen_channel_follow_v2(user.id, user.id, callback=on_follow)
         sub_id = await eventsub.listen_channel_subscribe(user.id, on_subscribe)
-        # listen for followers
-        # follow_id = await eventsub.listen_channel_follow_v2(user.id, user.id, callback=on_follow)
+        sub_gift_id = await eventsub.listen_channel_subscription_gift(user.id, on_gift_subscription)
+        resub_id = await eventsub.listen_channel_subscription_message(user.id, on_resub)
 
     try:
         input('press ENTER to stop\n')

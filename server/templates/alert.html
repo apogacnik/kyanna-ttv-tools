@@ -43,6 +43,19 @@
             font-size: 3rem;
             margin: 0px;
         }
+        .third-line {
+            font-size: 1rem;
+            margin: 5px;
+        }
+        .blackStroke
+        {
+            color: white;
+            text-shadow:
+            -1px -1px 0 #000,
+            1px -1px 0 #000,
+            -1px 1px 0 #000,
+            1px 1px 0 #000;  
+        }
     </style>
 </head>
 
@@ -56,7 +69,8 @@
                 <h3 id="username-text"></h3>
             </div>
         </div>
-        <h3 class="second-line">is a cute kitten now!</h3>
+        <h3 class="second-line blackStroke" id="line2"></h3>
+        <h3 class="third-line blackStroke" id="line3"></h3>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.0/socket.io.js"></script>
@@ -65,7 +79,7 @@
         var socket = io();
 
         // Function to display the username in the alert box
-        function showAlert(username, audio_file) {
+        function showAlert(textLine1, textLine2, textLine3, audio_file) {
             console.log(audio_file)
 
             // Play audio file
@@ -75,7 +89,11 @@
 
             const alertBox = document.getElementById('alert-box');
             const usernameText = document.getElementById('username-text');
-            usernameText.textContent = `${username}`;
+            usernameText.textContent = `${textLine1}`;
+            const secondLineText = document.getElementById('line2');
+            secondLineText.textContent = `${textLine2}`;
+            const thirdLineText = document.getElementById('line3');
+            thirdLineText.textContent = `${textLine3}`;
 
             // Remove previous animation classes
             alertBox.classList.remove('animate__fadeIn', 'animate__fadeOut');
@@ -98,8 +116,8 @@
 
         // Listen for 'display_alert' WebSocket event from the server
         socket.on('display_alert', function (data) {
-            if (data.username && data.audio_file) {
-                showAlert(data.username, data.audio_file);
+            if (data.event_type && data.textLine1 && data.textLine2 && data.audioFile) {
+                showAlert(data.textLine1, data.textLine2, data.textLine3, data.audioFile);
             }
         });
     </script>

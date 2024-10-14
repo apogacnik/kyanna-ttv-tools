@@ -18,12 +18,21 @@ def alerts_get():
 @app.route('/alert', methods=['POST'])
 def alert():
     data = request.json
-    username = data.get('username')
+    event_type = data.get('event_type')
+    textLine1 = data.get('textLine1')
+    textLine2 = data.get('textLine2')
+    textLine3 = data.get('textLine3')
     audio_file = data.get('audioFile')
 
-    if username and audio_file:
+    if event_type and textLine1 and textLine2 and audio_file:
         # Emit a WebSocket event to notify the client to display the alert
-        socketio.emit('display_alert', {'username': username, 'audio_file': audio_file})
+        socketio.emit('display_alert', {
+            'event_type': event_type,
+            'textLine1': textLine1,
+            'textLine2': textLine2,
+            'textLine3': textLine3,
+            'audioFile': audio_file
+        })
         return {'status': 'success'}
     else:
         return "Missing data", 400

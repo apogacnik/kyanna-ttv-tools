@@ -11,6 +11,7 @@ from datetime import datetime
 
 # Function to run Flask in a separate thread
 def run_flask():
+    print('Alerts overlay link: http://127.0.0.1:5000/alert')
     app.run(host='0.0.0.0', port=5000)
 
 async def main():
